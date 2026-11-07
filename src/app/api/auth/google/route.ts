@@ -5,7 +5,7 @@ import { appOrigin } from "@/lib/origin";
 export async function GET(request: Request) {
   const clientId = process.env.AUTH_GOOGLE_ID;
   if (!clientId || !process.env.AUTH_GOOGLE_SECRET) {
-    return NextResponse.redirect(new URL("/login?error=google", request.url));
+    return NextResponse.redirect(new URL("/login?error=config", request.url));
   }
 
   const state = randomBytes(16).toString("hex");

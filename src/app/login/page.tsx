@@ -7,6 +7,7 @@ import { getSession } from "@/lib/session";
 const ERRORS: Record<string, string> = {
   correo: "Escribe un correo válido.",
   google: "No se pudo completar el acceso con Google.",
+  config: "Google todavía no está conectado.",
   estado: "La verificación de Google expiró. Intenta otra vez.",
   dev: "El acceso local está desactivado.",
 };
@@ -50,7 +51,7 @@ async function LoginBody({ error }: { error?: string }) {
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-12">
       <p className="text-sm">Núcleo</p>
       <h1 className="mt-2 text-2xl font-semibold">Entrar</h1>
-      <p className="mt-3 text-ink-soft">Cada historial queda ligado a la cuenta con la que entras.</p>
+      <p className="mt-3 text-ink-soft">Tu historial queda ligado a la cuenta con la que entras.</p>
 
       {message ? (
         <p className="banner mt-6" role="alert">
@@ -59,18 +60,12 @@ async function LoginBody({ error }: { error?: string }) {
       ) : null}
 
       <div className="mt-6 flex flex-col gap-4">
-        {google ? (
-          <a href="/api/auth/google" className="btn btn-primary">
-            Continuar con Google
-          </a>
-        ) : (
-          <p className="text-sm text-ink-soft">
-            Google se activa con <span className="font-mono">AUTH_GOOGLE_ID</span> y{" "}
-            <span className="font-mono">AUTH_GOOGLE_SECRET</span>.
-          </p>
-        )}
+        <a href="/api/auth/google" className="btn btn-primary">
+          Continuar con Google
+        </a>
+        {!google ? <p className="text-sm text-ink-soft">Google todavía no está conectado.</p> : null}
 
-        {google && dev ? <p className="text-center text-sm text-ink-soft">o, para probar en esta máquina</p> : null}
+        {dev ? <p className="text-center text-sm text-ink-soft">o entra con un correo de prueba</p> : null}
 
         {dev ? (
           <form action={devLogin} className="card flex flex-col gap-4 p-4">
