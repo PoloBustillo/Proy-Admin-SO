@@ -14,11 +14,11 @@ PostgreSQL tiene que estar instalado y escuchando solo en localhost.
 
 ```bash
 npm install
-npm run db:init
+node scripts/init-db.js
 npm run dev
 ```
 
-`npm run db:init` crea la base `nucleo` si no existe y las tablas `users` y `submissions`. Se puede volver a correr sin borrar datos.
+`node scripts/init-db.js` crea la base `nucleo` si no existe y las tablas `users` y `submissions`. Se puede volver a correr sin borrar datos. También sirve `npm run db:init`.
 
 Abre http://localhost:3000. Con `AUTH_DEV_LOGIN=true` se entra con nombre y correo.
 
@@ -54,7 +54,7 @@ FTP_ROOT=nucleo
 
 No abras el puerto 5432 al exterior. Postgres solo debe aceptar conexiones locales.
 
-El primer paso en el servidor es `npm run db:init`.
+El primer paso en el servidor, desde la raíz del proyecto, es `node scripts/init-db.js`.
 
 Cron, cada minuto:
 

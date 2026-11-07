@@ -1,7 +1,31 @@
-import pg from "pg";
-import { loadEnvFiles } from "./load-env";
+const fs = require("node:fs");
+const path = require("node:path");
+const pg = require("pg");
 
-loadEnvFiles();
+const root = path.join(__dirname, "..");
+
+function loadEnvFile(name) {
+  const full = path.join(root, name);
+  if (!fs.existsSync(full)) return;
+  for (const line of fs.readFileSync(full, "utf8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq <= 0) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let value = trimmed.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (process.env[key] === undefined) process.env[key] = value;
+  }
+}
+
+loadEnvFile(".env");
+loadEnvFile(".env.local");
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
@@ -37,7 +61,7 @@ function databaseUrl() {
   return new URL(value);
 }
 
-function databaseName(url: URL) {
+function databaseName(url) {
   const name = decodeURIComponent(url.pathname.replace(/^\//, ""));
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
     throw new Error("El nombre de la base solo puede tener letras, números y _.");
@@ -55,7 +79,7 @@ async function main() {
   await admin.connect();
   try {
     const existing = await admin.query("SELECT 1 FROM pg_database WHERE datname = $1", [name]);
-    if ((existing.rowCount ?? 0) === 0) {
+    if ((existing.rowCount || 0) === 0) {
       await admin.query(`CREATE DATABASE ${name}`);
       console.log(`Base ${name} creada.`);
     } else {
@@ -75,7 +99,7 @@ async function main() {
   console.log("Tablas users y submissions listas.");
 }
 
-main().catch((error: unknown) => {
+main().catch((error) => {
   console.error(error instanceof Error ? error.message : error);
   process.exit(1);
 });

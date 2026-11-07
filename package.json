@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "worker": "tsx scripts/worker.ts",
-    "db:init": "tsx scripts/init-db.ts",
+    "db:init": "node scripts/init-db.js",
     "check": "tsx scripts/self-check.ts"
   },
   "dependencies": {
