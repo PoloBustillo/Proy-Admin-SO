@@ -4,7 +4,7 @@ const pg = require("pg");
 
 const root = path.join(__dirname, "..");
 
-function loadEnvFile(name) {
+function loadEnvFile(name, override) {
   const full = path.join(root, name);
   if (!fs.existsSync(full)) return;
   for (const line of fs.readFileSync(full, "utf8").split("\n")) {
@@ -20,12 +20,12 @@ function loadEnvFile(name) {
     ) {
       value = value.slice(1, -1);
     }
-    if (process.env[key] === undefined) process.env[key] = value;
+    if (override || process.env[key] === undefined) process.env[key] = value;
   }
 }
 
-loadEnvFile(".env");
-loadEnvFile(".env.local");
+loadEnvFile(".env", false);
+loadEnvFile(".env.local", true);
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
@@ -100,6 +100,22 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.includes("password authentication failed")) {
+    let user = "postgres";
+    let host = "127.0.0.1:5432";
+    try {
+      const url = new URL(process.env.DATABASE_URL || "");
+      user = decodeURIComponent(url.username || user);
+      host = `${url.hostname || "127.0.0.1"}:${url.port || "5432"}`;
+    } catch {
+      /* The URL is already invalid; the message below is enough. */
+    }
+    console.error(`La clave no coincide para el usuario "${user}" en ${host}.`);
+    console.error("Prueba la misma URL con: psql \"$DATABASE_URL\" -c 'SELECT current_user;'");
+    console.error("Si falla, pon la clave de nuevo: sudo -u postgres psql -c \"ALTER USER postgres PASSWORD 'una_clave';\"");
+    process.exit(1);
+  }
+  console.error(message);
   process.exit(1);
 });
