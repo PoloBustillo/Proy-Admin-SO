@@ -1,0 +1,171 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #111111;
+  --muted: #444444;
+  --line: #111111;
+  --paper: #ffffff;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--muted);
+  --color-line: #cccccc;
+  --color-panel: #ffffff;
+  --color-paper: var(--paper);
+  --font-sans: var(--font-source);
+  --font-mono: var(--font-plex);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--font-sans), sans-serif;
+}
+
+::selection {
+  background: #111;
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: 2px;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #111;
+  background: #fff;
+  color: #111;
+  padding: 0.45rem 0.8rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
+.btn-primary,
+.btn-ink {
+  background: #111;
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled),
+.btn-ink:hover:not(:disabled) {
+  background: #333;
+}
+
+.btn-line:hover:not(:disabled) {
+  background: #f3f3f3;
+}
+
+.card {
+  border: 1px solid #ccc;
+  background: #fff;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field span,
+.field-label {
+  font-size: 0.92rem;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  border: 1px solid #111;
+  background: #fff;
+  color: #111;
+  padding: 0.6rem 0.7rem;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 16rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.field textarea.short {
+  min-height: 7rem;
+}
+
+.langs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.lang {
+  border: 1px solid #111;
+  background: #fff;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+}
+
+.lang-on {
+  background: #111;
+  color: #fff;
+}
+
+.pane {
+  overflow: auto;
+  max-height: 28rem;
+  margin: 0;
+  border: 1px solid #ccc;
+  padding: 0.9rem 1rem;
+  white-space: pre;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #111;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.8rem;
+}
+
+.pill-error {
+  background: #111;
+  color: #fff;
+}
+
+.banner {
+  border: 1px solid #111;
+  padding: 0.7rem 0.8rem;
+}
