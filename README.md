@@ -20,7 +20,7 @@ npm run dev
 
 `node scripts/init-db.js` crea la base `nucleo` si no existe y las tablas `users` y `submissions`. Se puede volver a correr sin borrar datos. También sirve `npm run db:init`.
 
-Abre http://localhost:3000. Con `AUTH_DEV_LOGIN=true` se entra con nombre y correo.
+Abre http://localhost:3000. La entrada es solo con Google.
 
 ```bash
 npm run check

@@ -40,7 +40,13 @@ async function Run({ params }: { params: Promise<{ id: string }> }) {
             <StatusPill kind={kind} code={job.exitCode} />
           </div>
         </div>
-        <ProcessForm returnTo={`/ejecuciones/${job.id}`} />
+        {waiting ? (
+          <ProcessForm
+            returnTo={`/ejecuciones/${job.id}`}
+            submissionId={job.id}
+            label="Correr este programa ahora"
+          />
+        ) : null}
       </div>
 
       <LiveRefresh active={waiting} />
@@ -51,8 +57,8 @@ async function Run({ params }: { params: Promise<{ id: string }> }) {
           <dd className="mt-1">{languageLabel(job.language)}</dd>
         </div>
         <div>
-          <dt className="text-xs font-semibold tracking-[0.14em] text-ink-soft uppercase">Enviado</dt>
-          <dd className="mt-1">{formatWhen(job.createdAt)}</dd>
+          <dt className="text-xs font-semibold tracking-[0.14em] text-ink-soft uppercase">Corre</dt>
+          <dd className="mt-1">{formatWhen(job.runAt)}</dd>
         </div>
         <div>
           <dt className="text-xs font-semibold tracking-[0.14em] text-ink-soft uppercase">Terminó</dt>
@@ -68,8 +74,7 @@ async function Run({ params }: { params: Promise<{ id: string }> }) {
 
       {waiting ? (
         <p className="card p-4 text-ink-soft">
-          Sigue en cola. Cuando el cron —o el botón de arriba— lo ejecute, stdout y stderr aparecen aquí, incluido el
-          error del compilador si lo hay.
+          Sigue en cola hasta {formatWhen(job.runAt)}. El cron lo toma a esa hora. El play lo corre ahora.
         </p>
       ) : null}
 

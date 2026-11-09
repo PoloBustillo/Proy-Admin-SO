@@ -16,7 +16,3 @@ export async function getCurrentUser(): Promise<CurrentUser> {
 export function googleAuthEnabled() {
   return Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET);
 }
-
-export function devLoginEnabled() {
-  return process.env.AUTH_DEV_LOGIN === "true";
-}

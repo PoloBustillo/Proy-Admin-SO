@@ -150,6 +150,7 @@ await insertSubmission({
   stderr: "",
   command: "",
   createdAt,
+  runAt: createdAt,
   startedAt: null,
   finishedAt: null,
 });

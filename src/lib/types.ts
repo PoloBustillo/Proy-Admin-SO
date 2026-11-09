@@ -26,6 +26,7 @@ export type Submission = {
   stderr: string;
   command: string;
   createdAt: string;
+  runAt: string;
   startedAt: string | null;
   finishedAt: string | null;
 };

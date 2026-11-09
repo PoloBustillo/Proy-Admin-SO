@@ -47,9 +47,13 @@ CREATE TABLE IF NOT EXISTS submissions (
   stderr text NOT NULL DEFAULT '',
   command text NOT NULL DEFAULT '',
   created_at timestamptz NOT NULL,
+  run_at timestamptz,
   started_at timestamptz,
   finished_at timestamptz
 );
+
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS run_at timestamptz;
+UPDATE submissions SET run_at = created_at WHERE run_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS submissions_user_created
   ON submissions (user_id, created_at DESC);

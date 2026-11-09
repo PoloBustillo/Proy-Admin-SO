@@ -3,12 +3,12 @@
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { insertSubmission, listByUser, upsertUser } from "@/lib/db";
+import { insertSubmission, listByUser, runOwnJobNow } from "@/lib/db";
 import { safeFilename } from "@/lib/filenames";
 import { runQueue } from "@/lib/queue";
 import { getSession } from "@/lib/session";
 import { putPendingJob } from "@/lib/storage";
-import { isLanguage, type Submission } from "@/lib/types";
+import { isJobId, isLanguage, type Submission } from "@/lib/types";
 
 export type ActionError = { error: string } | null;
 
@@ -16,29 +16,25 @@ const MAX_SOURCE = 200_000;
 const MAX_STDIN = 20_000;
 const MAX_PENDING = 30;
 
+function parseRunAt(value: string): { iso: string } | { error: string } {
+  if (!value) return { iso: new Date().toISOString() };
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
+    return { error: "La hora de ejecución no es válida." };
+  }
+  const date = new Date(`${value}:00-06:00`);
+  if (Number.isNaN(date.getTime())) return { error: "La hora de ejecución no es válida." };
+  const now = Date.now();
+  if (date.getTime() < now - 60_000) return { iso: new Date(now).toISOString() };
+  if (date.getTime() > now + 7 * 24 * 60 * 60 * 1000) {
+    return { error: "Solo puedes programar hasta 7 días adelante." };
+  }
+  return { iso: date.toISOString() };
+}
+
 function safeReturn(value: FormDataEntryValue | null) {
   const text = String(value || "/dashboard").split("?")[0];
   if (!/^\/[A-Za-z0-9/_-]*$/.test(text)) return "/dashboard";
   return text;
-}
-
-export async function devLogin(formData: FormData) {
-  if (process.env.AUTH_DEV_LOGIN !== "true") redirect("/login?error=dev");
-
-  const email = String(formData.get("email") || "").trim().toLowerCase();
-  const name = String(formData.get("name") || "").trim();
-  if (email.length > 120 || name.length > 80 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    redirect("/login?error=correo");
-  }
-
-  const session = await getSession();
-  session.userId = `dev:${email}`;
-  session.email = email;
-  session.name = name || email;
-  delete session.image;
-  await session.save();
-  await upsertUser(session.userId, session.email, session.name);
-  redirect("/dashboard");
 }
 
 export async function logout() {
@@ -66,6 +62,9 @@ export async function submitCode(_prev: ActionError, formData: FormData): Promis
     return { error: "Tienes 30 trabajos sin terminar. Espera a que corra la cola." };
   }
 
+  const runAt = parseRunAt(String(formData.get("runAt") || ""));
+  if ("error" in runAt) return { error: runAt.error };
+
   const submission: Submission = {
     id: randomUUID(),
     userId: user.id,
@@ -81,6 +80,7 @@ export async function submitCode(_prev: ActionError, formData: FormData): Promis
     stderr: "",
     command: "",
     createdAt: new Date().toISOString(),
+    runAt: runAt.iso,
     startedAt: null,
     finishedAt: null,
   };
@@ -106,7 +106,11 @@ export async function submitCode(_prev: ActionError, formData: FormData): Promis
 }
 
 export async function processQueue(formData: FormData) {
-  await getCurrentUser();
+  const user = await getCurrentUser();
+  const submissionId = String(formData.get("submissionId") || "");
+  if (submissionId && isJobId(submissionId)) {
+    await runOwnJobNow(submissionId, user.id);
+  }
   const returnTo = safeReturn(formData.get("returnTo"));
 
   try {

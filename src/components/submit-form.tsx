@@ -17,12 +17,14 @@ export function SubmitForm() {
   const [language, setLanguage] = useState<Language>("python");
   const [filename, setFilename] = useState("");
   const [source, setSource] = useState("");
+  const [fromFile, setFromFile] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function loadFile(file: File) {
     const text = await file.text();
     setSource(text);
     setFilename(file.name);
+    setFromFile(true);
     const detected = languageFromFilename(file.name);
     if (detected) setLanguage(detected);
   }
@@ -67,23 +69,21 @@ export function SubmitForm() {
         />
       </label>
 
-      <label className="field">
-        <span>Programa</span>
-        <textarea
-          name="source"
-          value={source}
-          spellCheck={false}
-          maxLength={200000}
-          placeholder="Pega el código o carga un archivo. No se revisa la sintaxis."
-          onChange={(event) => setSource(event.target.value)}
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={(event) => {
-            event.preventDefault();
-            const file = event.dataTransfer.files?.[0];
-            if (file) void loadFile(file);
-          }}
-        />
-      </label>
+      {fromFile ? (
+        <input type="hidden" name="source" value={source} />
+      ) : (
+        <label className="field">
+          <span>Programa</span>
+          <textarea
+            name="source"
+            value={source}
+            spellCheck={false}
+            maxLength={200000}
+            placeholder="Pega el código. No se revisa la sintaxis."
+            onChange={(event) => setSource(event.target.value)}
+          />
+        </label>
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <input
@@ -97,18 +97,29 @@ export function SubmitForm() {
           }}
         />
         <button type="button" className="btn btn-line" onClick={() => fileRef.current?.click()}>
-          Cargar archivo
+          {fromFile ? "Cambiar archivo" : "Cargar archivo"}
         </button>
-        <span className="text-sm text-ink-soft">.py, .java, .c, .cpp u otro texto</span>
+        {fromFile ? (
+          <button
+            type="button"
+            className="text-sm underline"
+            onClick={() => {
+              setFromFile(false);
+              setSource("");
+            }}
+          >
+            Quitar archivo
+          </button>
+        ) : (
+          <span className="text-sm text-ink-soft">.py, .java, .c, .cpp u otro texto</span>
+        )}
       </div>
 
-      <details>
-        <summary className="cursor-pointer font-semibold">Entrada estándar, opcional</summary>
-        <label className="field mt-3">
-          <span>Se envía tal cual al programa cuando el cron lo ejecute</span>
-          <textarea name="stdin" className="short" maxLength={20000} spellCheck={false} />
-        </label>
-      </details>
+      <label className="field">
+        <span>Cuándo correr</span>
+        <input name="runAt" type="datetime-local" />
+      </label>
+      <p className="text-sm text-ink-soft">Hora de la Ciudad de México. Si lo dejas vacío, entra en la cola ahora.</p>
 
       <div>
         <button type="submit" className="btn btn-primary" disabled={pending}>
