@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { DeleteJobForm } from "@/components/delete-job";
 import { LiveRefresh } from "@/components/live-refresh";
 import { ProcessForm } from "@/components/process-form";
 import { Shell, ShellFallback } from "@/components/shell";
@@ -40,6 +41,7 @@ async function Run({ params }: { params: Promise<{ id: string }> }) {
             <StatusPill kind={kind} code={job.exitCode} />
           </div>
         </div>
+        <DeleteJobForm id={job.id} />
         {waiting && !job.scheduled ? (
           <ProcessForm
             returnTo={`/ejecuciones/${job.id}`}

@@ -11,6 +11,7 @@ interface StorageIO {
   write(rel: string, content: string): Promise<void>;
   read(rel: string): Promise<string | null>;
   list(rel: string): Promise<Entry[]>;
+  removeDir(rel: string): Promise<void>;
 }
 
 export function storageDriver() {
@@ -60,6 +61,9 @@ const localIO: StorageIO = {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
       throw error;
     }
+  },
+  async removeDir(rel) {
+    await rm(localPath(rel), { recursive: true, force: true });
   },
 };
 
@@ -139,6 +143,16 @@ async function withFtp<T>(fn: (io: StorageIO) => Promise<T>): Promise<T> {
           throw error;
         }
       },
+      async removeDir(rel) {
+        assertRel(rel);
+        await client.cd(base);
+        try {
+          await client.removeDir(rel);
+        } catch (error) {
+          if (isMissing(error)) return;
+          throw error;
+        }
+      },
     };
 
     return await fn(io);
@@ -164,6 +178,11 @@ export async function putPendingJob(job: JobFile, source: string) {
     await io.write(`jobs/${job.id}/source`, source);
     await io.write(`jobs/${job.id}/state.json`, JSON.stringify(state));
   });
+}
+
+export async function removeJob(id: string) {
+  if (!isJobId(id)) return;
+  await withStorage((io) => io.removeDir(`jobs/${id}`));
 }
 
 export async function readSource(id: string) {

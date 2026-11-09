@@ -3,11 +3,11 @@
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { getOwned, insertSubmission, listByUser } from "@/lib/db";
-import { safeFilename } from "@/lib/filenames";
+import { deleteOwned, getOwned, insertSubmission, listByUser } from "@/lib/db";
+import { filenameFor } from "@/lib/filenames";
 import { runQueue } from "@/lib/queue";
 import { getSession } from "@/lib/session";
-import { putPendingJob } from "@/lib/storage";
+import { putPendingJob, removeJob } from "@/lib/storage";
 import { isJobId, isLanguage, type Submission } from "@/lib/types";
 
 export type ActionError = { error: string } | null;
@@ -50,7 +50,7 @@ export async function submitCode(_prev: ActionError, formData: FormData): Promis
 
   const source = String(formData.get("source") || "");
   const stdin = String(formData.get("stdin") || "");
-  const filename = safeFilename(String(formData.get("filename") || ""), languageValue);
+  const filename = filenameFor(languageValue, source, String(formData.get("filename") || ""));
 
   if (!source) return { error: "Escribe o carga un programa." };
   if (source.includes("\0")) return { error: "El archivo no es texto." };
@@ -112,6 +112,21 @@ export async function submitCode(_prev: ActionError, formData: FormData): Promis
     }
   }
   redirect(`/ejecuciones/${submission.id}`);
+}
+
+export async function deleteSubmission(formData: FormData) {
+  const user = await getCurrentUser();
+  const id = String(formData.get("id") || "");
+  if (!isJobId(id)) redirect("/historial");
+  const removed = await deleteOwned(id, user.id);
+  if (removed) {
+    try {
+      await removeJob(id);
+    } catch {
+      /* La fila ya no está. Un archivo que quede en el FTP no vuelve al historial. */
+    }
+  }
+  redirect("/historial");
 }
 
 export async function processQueue(formData: FormData) {

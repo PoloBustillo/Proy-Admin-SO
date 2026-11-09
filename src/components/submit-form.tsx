@@ -58,18 +58,7 @@ export function SubmitForm() {
         </div>
       </fieldset>
 
-      <label className="field">
-        <span>Nombre de archivo</span>
-        <input
-          name="filename"
-          value={filename}
-          maxLength={80}
-          autoComplete="off"
-          spellCheck={false}
-          placeholder={language === "java" ? "Main.java" : language === "c" ? "main.c" : language === "cpp" ? "main.cpp" : "main.py"}
-          onChange={(event) => setFilename(event.target.value)}
-        />
-      </label>
+      {fromFile ? <input type="hidden" name="filename" value={filename} /> : null}
 
       {fromFile ? (
         <input type="hidden" name="source" value={source} />
@@ -101,6 +90,7 @@ export function SubmitForm() {
         <button type="button" className="btn btn-line" onClick={() => fileRef.current?.click()}>
           {fromFile ? "Cambiar archivo" : "Cargar archivo"}
         </button>
+        {fromFile ? <span className="truncate font-mono text-sm">{filename}</span> : null}
         {fromFile ? (
           <button
             type="button"
@@ -108,6 +98,7 @@ export function SubmitForm() {
             onClick={() => {
               setFromFile(false);
               setSource("");
+              setFilename("");
             }}
           >
             Quitar archivo

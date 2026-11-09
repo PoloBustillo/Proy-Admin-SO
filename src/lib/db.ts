@@ -122,6 +122,11 @@ export async function listByUser(userId: string) {
   return result.rows.map(mapRow);
 }
 
+export async function deleteOwned(id: string, userId: string) {
+  const result = await getPool().query(`DELETE FROM submissions WHERE id = $1 AND user_id = $2`, [id, userId]);
+  return (result.rowCount ?? 0) > 0;
+}
+
 export async function getOwned(id: string, userId: string) {
   const result = await getPool().query<SubmissionRow>(
     `${SELECT_SUBMISSION} WHERE s.id = $1 AND s.user_id = $2`,
