@@ -28,6 +28,7 @@ type SubmissionRow = {
   command: string;
   created_at: Date;
   run_at: Date | null;
+  scheduled: boolean;
   started_at: Date | null;
   finished_at: Date | null;
 };
@@ -59,6 +60,7 @@ function mapRow(row: SubmissionRow): Submission {
     command: row.command,
     createdAt: row.created_at.toISOString(),
     runAt: toIso(row.run_at) || row.created_at.toISOString(),
+    scheduled: row.scheduled,
     startedAt: toIso(row.started_at),
     finishedAt: toIso(row.finished_at),
   };
@@ -67,7 +69,7 @@ function mapRow(row: SubmissionRow): Submission {
 const SELECT_SUBMISSION = `
   SELECT s.id, s.user_id, u.email, u.name, s.language, s.filename, s.source, s.stdin,
          s.status, s.exit_code, s.stdout, s.stderr, s.command,
-         s.created_at, s.run_at, s.started_at, s.finished_at
+         s.created_at, s.run_at, s.scheduled, s.started_at, s.finished_at
   FROM submissions s
   JOIN users u ON u.id = s.user_id
 `;
@@ -86,10 +88,10 @@ export async function insertSubmission(submission: Submission) {
   await getPool().query(
     `INSERT INTO submissions (
        id, user_id, language, filename, source, stdin, status,
-       exit_code, stdout, stderr, command, created_at, run_at, started_at, finished_at
+       exit_code, stdout, stderr, command, created_at, run_at, scheduled, started_at, finished_at
      ) VALUES (
        $1, $2, $3, $4, $5, $6, $7,
-       $8, $9, $10, $11, $12, $13, $14, $15
+       $8, $9, $10, $11, $12, $13, $14, $15, $16
      )`,
     [
       submission.id,
@@ -105,6 +107,7 @@ export async function insertSubmission(submission: Submission) {
       submission.command,
       submission.createdAt,
       submission.runAt,
+      submission.scheduled,
       submission.startedAt,
       submission.finishedAt,
     ],
@@ -140,16 +143,6 @@ export async function listRunnable(limit: number) {
     [limit],
   );
   return result.rows.map(mapRow);
-}
-
-export async function runOwnJobNow(id: string, userId: string) {
-  const result = await getPool().query(
-    `UPDATE submissions
-     SET run_at = now()
-     WHERE id = $1 AND user_id = $2 AND status = 'queued'`,
-    [id, userId],
-  );
-  return (result.rowCount ?? 0) > 0;
 }
 
 export async function claimSubmission(id: string) {

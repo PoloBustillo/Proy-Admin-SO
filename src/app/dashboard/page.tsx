@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { ProcessForm } from "@/components/process-form";
 import { Shell, ShellFallback } from "@/components/shell";
 import { SubmitForm } from "@/components/submit-form";
 import { getCurrentUser } from "@/lib/auth";
@@ -36,11 +35,9 @@ async function Dashboard({
         <div>
           <h1 className="text-2xl font-semibold">Enviar programa</h1>
           <p className="mt-2 max-w-2xl text-ink-soft">
-            Elige la hora al enviarlo. El cron lo corre a partir de ese momento. El play ejecuta lo que ya está en
-            tiempo.
+            Ahora lo corre al momento. Programar lo deja para la hora que elijas.
           </p>
         </div>
-        <ProcessForm returnTo="/dashboard" />
       </div>
 
       {aviso ? (

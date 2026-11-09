@@ -48,11 +48,13 @@ CREATE TABLE IF NOT EXISTS submissions (
   command text NOT NULL DEFAULT '',
   created_at timestamptz NOT NULL,
   run_at timestamptz,
+  scheduled boolean NOT NULL DEFAULT false,
   started_at timestamptz,
   finished_at timestamptz
 );
 
 ALTER TABLE submissions ADD COLUMN IF NOT EXISTS run_at timestamptz;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS scheduled boolean NOT NULL DEFAULT false;
 UPDATE submissions SET run_at = created_at WHERE run_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS submissions_user_created

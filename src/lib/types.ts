@@ -27,6 +27,7 @@ export type Submission = {
   command: string;
   createdAt: string;
   runAt: string;
+  scheduled: boolean;
   startedAt: string | null;
   finishedAt: string | null;
 };

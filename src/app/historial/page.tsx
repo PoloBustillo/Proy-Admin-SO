@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { JobTable } from "@/components/job-table";
 import { LiveRefresh } from "@/components/live-refresh";
-import { ProcessForm } from "@/components/process-form";
 import { Shell, ShellFallback } from "@/components/shell";
 import { getCurrentUser } from "@/lib/auth";
 import { listByUser } from "@/lib/db";
@@ -28,7 +27,6 @@ async function History() {
           <h1 className="text-2xl font-semibold">Historial</h1>
           <p className="mt-2 text-ink-soft">Solo las ejecuciones de {user.email}.</p>
         </div>
-        <ProcessForm returnTo="/historial" />
       </div>
       <LiveRefresh active={waiting} />
       <JobTable jobs={jobs} />

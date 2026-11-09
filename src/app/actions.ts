@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { insertSubmission, listByUser, runOwnJobNow } from "@/lib/db";
+import { getOwned, insertSubmission, listByUser } from "@/lib/db";
 import { safeFilename } from "@/lib/filenames";
 import { runQueue } from "@/lib/queue";
 import { getSession } from "@/lib/session";
@@ -16,15 +16,15 @@ const MAX_SOURCE = 200_000;
 const MAX_STDIN = 20_000;
 const MAX_PENDING = 30;
 
-function parseRunAt(value: string): { iso: string } | { error: string } {
-  if (!value) return { iso: new Date().toISOString() };
+function parseSchedule(value: string): { iso: string } | { error: string } {
+  if (!value) return { error: "Elige la hora a la que debe correr." };
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
     return { error: "La hora de ejecución no es válida." };
   }
   const date = new Date(`${value}:00-06:00`);
   if (Number.isNaN(date.getTime())) return { error: "La hora de ejecución no es válida." };
   const now = Date.now();
-  if (date.getTime() < now - 60_000) return { iso: new Date(now).toISOString() };
+  if (date.getTime() < now + 60_000) return { error: "Elige una hora al menos un minuto adelante." };
   if (date.getTime() > now + 7 * 24 * 60 * 60 * 1000) {
     return { error: "Solo puedes programar hasta 7 días adelante." };
   }
@@ -62,8 +62,9 @@ export async function submitCode(_prev: ActionError, formData: FormData): Promis
     return { error: "Tienes 30 trabajos sin terminar. Espera a que corra la cola." };
   }
 
-  const runAt = parseRunAt(String(formData.get("runAt") || ""));
-  if ("error" in runAt) return { error: runAt.error };
+  const later = String(formData.get("when") || "") === "later";
+  const schedule = later ? parseSchedule(String(formData.get("runAt") || "")) : null;
+  if (schedule && "error" in schedule) return { error: schedule.error };
 
   const submission: Submission = {
     id: randomUUID(),
@@ -80,7 +81,8 @@ export async function submitCode(_prev: ActionError, formData: FormData): Promis
     stderr: "",
     command: "",
     createdAt: new Date().toISOString(),
-    runAt: runAt.iso,
+    runAt: schedule && "iso" in schedule ? schedule.iso : new Date().toISOString(),
+    scheduled: later,
     startedAt: null,
     finishedAt: null,
   };
@@ -102,16 +104,24 @@ export async function submitCode(_prev: ActionError, formData: FormData): Promis
   }
 
   await insertSubmission(submission);
+  if (!later) {
+    try {
+      await runQueue(5);
+    } catch {
+      redirect(`/ejecuciones/${submission.id}`);
+    }
+  }
   redirect(`/ejecuciones/${submission.id}`);
 }
 
 export async function processQueue(formData: FormData) {
   const user = await getCurrentUser();
+  const returnTo = safeReturn(formData.get("returnTo"));
   const submissionId = String(formData.get("submissionId") || "");
   if (submissionId && isJobId(submissionId)) {
-    await runOwnJobNow(submissionId, user.id);
+    const job = await getOwned(submissionId, user.id);
+    if (!job || job.scheduled) redirect(returnTo);
   }
-  const returnTo = safeReturn(formData.get("returnTo"));
 
   try {
     await runQueue(5);

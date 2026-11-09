@@ -151,6 +151,7 @@ await insertSubmission({
   command: "",
   createdAt,
   runAt: createdAt,
+  scheduled: false,
   startedAt: null,
   finishedAt: null,
 });

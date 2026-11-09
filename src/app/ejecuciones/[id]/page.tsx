@@ -40,7 +40,7 @@ async function Run({ params }: { params: Promise<{ id: string }> }) {
             <StatusPill kind={kind} code={job.exitCode} />
           </div>
         </div>
-        {waiting ? (
+        {waiting && !job.scheduled ? (
           <ProcessForm
             returnTo={`/ejecuciones/${job.id}`}
             submissionId={job.id}
@@ -57,8 +57,10 @@ async function Run({ params }: { params: Promise<{ id: string }> }) {
           <dd className="mt-1">{languageLabel(job.language)}</dd>
         </div>
         <div>
-          <dt className="text-xs font-semibold tracking-[0.14em] text-ink-soft uppercase">Corre</dt>
-          <dd className="mt-1">{formatWhen(job.runAt)}</dd>
+          <dt className="text-xs font-semibold tracking-[0.14em] text-ink-soft uppercase">
+            {job.scheduled ? "Programado" : "Corre"}
+          </dt>
+          <dd className="mt-1">{job.scheduled ? formatWhen(job.runAt) : "Ahora"}</dd>
         </div>
         <div>
           <dt className="text-xs font-semibold tracking-[0.14em] text-ink-soft uppercase">Terminó</dt>
@@ -74,7 +76,9 @@ async function Run({ params }: { params: Promise<{ id: string }> }) {
 
       {waiting ? (
         <p className="card p-4 text-ink-soft">
-          Sigue en cola hasta {formatWhen(job.runAt)}. El cron lo toma a esa hora. El play lo corre ahora.
+          {job.scheduled
+            ? `Programado para ${formatWhen(job.runAt)}. El cron lo corre a esa hora.`
+            : "Sigue en cola para correr ahora."}
         </p>
       ) : null}
 
