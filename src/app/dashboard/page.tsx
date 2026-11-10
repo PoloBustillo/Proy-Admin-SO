@@ -33,10 +33,7 @@ async function Dashboard({
     <Shell user={user} current="dashboard">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Enviar programa</h1>
-          <p className="mt-2 max-w-2xl text-ink-soft">
-            Ahora lo corre al momento. Programar lo deja para la hora que elijas.
-          </p>
+          <h1 className="text-2xl font-semibold">Proyecto Sistema Operativos</h1>
         </div>
       </div>
 

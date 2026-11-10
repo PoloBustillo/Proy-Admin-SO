@@ -139,7 +139,7 @@ export function SubmitForm() {
       {when === "later" ? (
         <>
           <label className="field">
-            <span>Hora, Ciudad de México</span>
+            <span>Hora</span>
             <input name="runAt" type="datetime-local" required />
           </label>
           <div>

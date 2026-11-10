@@ -20,7 +20,7 @@ export default function LoginPage({
   searchParams: Promise<{ error?: string | string[] }>;
 }) {
   return (
-    <Suspense fallback={<p className="px-6 py-16 text-ink-soft">Cargando…</p>}>
+    <Suspense fallback={<p className="px-6 py-16 text-center text-ink-soft">Cargando…</p>}>
       <LoginSearch searchParams={searchParams} />
     </Suspense>
   );
@@ -42,9 +42,8 @@ async function LoginBody({ error }: { error?: string }) {
   const message = error ? ERRORS[error] || "No se pudo entrar." : null;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-12">
-      <p className="text-sm">Núcleo</p>
-      <h1 className="mt-2 text-2xl font-semibold">Entrar</h1>
+    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-5 py-12 text-center">
+      <h1 className="text-2xl font-semibold">Entrar</h1>
 
       {message ? (
         <p className="banner mt-6" role="alert">
