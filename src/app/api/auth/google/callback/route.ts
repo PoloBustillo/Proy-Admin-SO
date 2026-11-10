@@ -24,9 +24,8 @@ export async function GET(request: Request) {
 
   const clientId = process.env.AUTH_GOOGLE_ID;
   const clientSecret = process.env.AUTH_GOOGLE_SECRET;
-  if (!clientId || !clientSecret) redirect("/login?error=google");
-
-  const origin = appOrigin(request);
+  const origin = appOrigin();
+  if (!clientId || !clientSecret || !origin) redirect("/login?error=config");
   const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     cache: "no-store",

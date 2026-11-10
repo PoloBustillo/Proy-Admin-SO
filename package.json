@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "worker": "tsx scripts/worker.ts",
-    "db:init": "node scripts/init-db.js",
-    "check": "tsx scripts/self-check.ts"
+    "db:init": "node scripts/init-db.js"
   },
   "dependencies": {
     "basic-ftp": "^6.2.6",

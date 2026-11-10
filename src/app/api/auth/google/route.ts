@@ -4,12 +4,12 @@ import { appOrigin } from "@/lib/origin";
 
 export async function GET(request: Request) {
   const clientId = process.env.AUTH_GOOGLE_ID;
-  if (!clientId || !process.env.AUTH_GOOGLE_SECRET) {
+  const origin = appOrigin();
+  if (!clientId || !process.env.AUTH_GOOGLE_SECRET || !origin) {
     return NextResponse.redirect(new URL("/login?error=config", request.url));
   }
 
   const state = randomBytes(16).toString("hex");
-  const origin = appOrigin(request);
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("redirect_uri", `${origin}/api/auth/google/callback`);

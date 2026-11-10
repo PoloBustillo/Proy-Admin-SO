@@ -13,8 +13,3 @@ export async function getCurrentUser(): Promise<CurrentUser> {
     image: session.image,
   };
 }
-
-/** El botón de Google solo aparece si el .env tiene id y secreto. */
-export function googleAuthEnabled() {
-  return Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET);
-}

@@ -1,14 +1,11 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { googleAuthEnabled } from "@/lib/auth";
 import { getSession } from "@/lib/session";
 
 const ERRORS: Record<string, string> = {
-  correo: "Escribe un correo válido.",
   google: "No se pudo completar el acceso con Google.",
   config: "Google todavía no está conectado.",
   estado: "La verificación de Google expiró. Intenta otra vez.",
-  dev: "El acceso local está desactivado.",
 };
 
 function first(value: string | string[] | undefined) {
@@ -42,14 +39,12 @@ async function LoginBody({ error }: { error?: string }) {
   const session = await getSession();
   if (session.userId && session.email) redirect("/dashboard");
 
-  const google = googleAuthEnabled();
   const message = error ? ERRORS[error] || "No se pudo entrar." : null;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-12">
       <p className="text-sm">Núcleo</p>
       <h1 className="mt-2 text-2xl font-semibold">Entrar</h1>
-      <p className="mt-3 text-ink-soft">Tu historial queda ligado a la cuenta con la que entras.</p>
 
       {message ? (
         <p className="banner mt-6" role="alert">
@@ -57,11 +52,10 @@ async function LoginBody({ error }: { error?: string }) {
         </p>
       ) : null}
 
-      <div className="mt-6 flex flex-col gap-4">
+      <div className="mt-6">
         <a href="/api/auth/google" className="btn btn-primary">
           Continuar con Google
         </a>
-        {!google ? <p className="text-sm text-ink-soft">Google todavía no está conectado.</p> : null}
       </div>
     </main>
   );

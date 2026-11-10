@@ -24,12 +24,6 @@ npm run dev
 
 Abre http://localhost:3000. La entrada es solo con Google.
 
-```bash
-npm run check
-```
-
-Eso prueba el runner y que el resultado de la cola queda en PostgreSQL, visible solo para su autor.
-
 ## Google
 
 Cliente OAuth de tipo aplicación web. Redirect autorizado:
