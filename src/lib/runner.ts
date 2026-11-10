@@ -10,6 +10,7 @@ const OUTPUT_CAP = 64 * 1024;
 
 type RunOutput = { code: number; stdout: string; stderr: string };
 
+/** Corta la salida para no guardar textos enormes en la base. */
 function appendCap(current: string, chunk: string) {
   if (current.includes("[salida truncada]")) return current;
   const next = current + chunk;
@@ -17,12 +18,14 @@ function appendCap(current: string, chunk: string) {
   return `${next.slice(0, OUTPUT_CAP)}\n[salida truncada]\n`;
 }
 
+/** Segundos de RUN_TIMEOUT_SEC. Por defecto 8, máximo 120. */
 function timeoutMs() {
   const seconds = Number(process.env.RUN_TIMEOUT_SEC || 8);
   if (!Number.isFinite(seconds) || seconds <= 0) return 8_000;
   return Math.min(seconds, 120) * 1000;
 }
 
+/** Mata el proceso y los que haya abierto, por ejemplo el compilador. */
 function killTree(child: ChildProcess) {
   if (child.pid == null) return;
   try {
@@ -31,11 +34,12 @@ function killTree(child: ChildProcess) {
     try {
       child.kill("SIGKILL");
     } catch {
-      /* The process already exited. */
+        /* El proceso ya había terminado. */
     }
   }
 }
 
+/** Lanza un comando, guarda stdout y stderr, y lo corta si se pasa del tiempo. */
 function run(cmd: string, args: string[], cwd: string, input: string, limitMs: number) {
   return new Promise<RunOutput>((resolve) => {
     let stdout = "";
@@ -82,7 +86,7 @@ function run(cmd: string, args: string[], cwd: string, input: string, limitMs: n
       stderr = appendCap(stderr, chunk.toString("utf8"));
     });
     child.stdin?.on("error", () => {
-      /* The program closed stdin before reading all of it. */
+      /* El programa cerró la entrada antes de leerla toda. */
     });
     child.on("error", (error) => {
       stderr = appendCap(stderr, `No se encontró el comando "${cmd}".\n${error.message}\n`);
@@ -100,6 +104,7 @@ function run(cmd: string, args: string[], cwd: string, input: string, limitMs: n
   });
 }
 
+/** Compila y, si compiló, corre el programa. Si no, devuelve el error del compilador tal cual. */
 async function compileAndRun(
   compile: string[],
   runCmd: string,
@@ -116,6 +121,7 @@ async function compileAndRun(
   return { ...executed, command: `${compileCommand} && ${displayRun}` };
 }
 
+/** Escribe el código en una carpeta temporal, lo corre y borra esa carpeta. */
 export async function executeJob(input: {
   id: string;
   language: Language;

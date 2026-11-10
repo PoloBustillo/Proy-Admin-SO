@@ -27,6 +27,7 @@ function loadEnvFile(name, override) {
 loadEnvFile(".env", false);
 loadEnvFile(".env.local", true);
 
+// Crea la base y las tablas. Se puede correr otra vez: no borra filas.
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
   id text PRIMARY KEY,

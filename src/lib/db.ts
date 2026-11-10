@@ -3,6 +3,7 @@ import { isLanguage, type JobResult, type Submission, type SubmissionStatus } fr
 
 let pool: pg.Pool | null = null;
 
+/** Una sola conexión a Postgres. DATABASE_URL es local, en 127.0.0.1. */
 function getPool() {
   if (!pool) {
     const connectionString = process.env.DATABASE_URL;
@@ -74,6 +75,7 @@ const SELECT_SUBMISSION = `
   JOIN users u ON u.id = s.user_id
 `;
 
+/** Crea el usuario al entrar con Google, o actualiza su nombre y correo. */
 export async function upsertUser(id: string, email: string, name: string) {
   await getPool().query(
     `INSERT INTO users (id, email, name)
@@ -83,6 +85,7 @@ export async function upsertUser(id: string, email: string, name: string) {
   );
 }
 
+/** Inserta el programa en cola. El cron no crea filas: solo actualiza esta. */
 export async function insertSubmission(submission: Submission) {
   await upsertUser(submission.userId, submission.userEmail, submission.userName);
   await getPool().query(
@@ -114,6 +117,7 @@ export async function insertSubmission(submission: Submission) {
   );
 }
 
+/** Historial de una persona, de la más nueva a la más vieja. */
 export async function listByUser(userId: string) {
   const result = await getPool().query<SubmissionRow>(
     `${SELECT_SUBMISSION} WHERE s.user_id = $1 ORDER BY s.created_at DESC`,
@@ -122,11 +126,13 @@ export async function listByUser(userId: string) {
   return result.rows.map(mapRow);
 }
 
+/** Borra una ejecución solo si la fila es de ese usuario. */
 export async function deleteOwned(id: string, userId: string) {
   const result = await getPool().query(`DELETE FROM submissions WHERE id = $1 AND user_id = $2`, [id, userId]);
   return (result.rowCount ?? 0) > 0;
 }
 
+/** Una ejecución, solo si pertenece a ese usuario. */
 export async function getOwned(id: string, userId: string) {
   const result = await getPool().query<SubmissionRow>(
     `${SELECT_SUBMISSION} WHERE s.id = $1 AND s.user_id = $2`,
@@ -135,13 +141,11 @@ export async function getOwned(id: string, userId: string) {
   return result.rows[0] ? mapRow(result.rows[0]) : null;
 }
 
+/** Trabajos en cola cuya hora ya llegó. Uno programado a futuro no sale. */
 export async function listRunnable(limit: number) {
   const result = await getPool().query<SubmissionRow>(
     `${SELECT_SUBMISSION}
-     WHERE (
-         s.status = 'queued'
-         OR (s.status = 'running' AND s.started_at < now() - interval '2 minutes')
-       )
+     WHERE s.status = 'queued'
        AND (s.run_at IS NULL OR s.run_at <= now())
      ORDER BY s.created_at ASC
      LIMIT $1`,
@@ -150,22 +154,21 @@ export async function listRunnable(limit: number) {
   return result.rows.map(mapRow);
 }
 
+/** Pasa la fila a running. Devuelve false si otro proceso ya la tomó. */
 export async function claimSubmission(id: string) {
   const result = await getPool().query(
     `UPDATE submissions
      SET status = 'running',
-         started_at = COALESCE(started_at, now())
+         started_at = now()
      WHERE id = $1
-       AND (run_at IS NULL OR run_at <= now())
-       AND (
-         status = 'queued'
-         OR (status = 'running' AND started_at < now() - interval '2 minutes')
-       )`,
+       AND status = 'queued'
+       AND (run_at IS NULL OR run_at <= now())`,
     [id],
   );
   return (result.rowCount ?? 0) > 0;
 }
 
+/** Guarda la salida del compilador o del programa y cierra la fila. */
 export async function completeSubmission(id: string, result: JobResult) {
   await getPool().query(
     `UPDATE submissions

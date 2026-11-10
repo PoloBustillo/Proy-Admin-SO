@@ -32,19 +32,6 @@ export type Submission = {
   finishedAt: string | null;
 };
 
-export type JobFile = {
-  id: string;
-  language: Language;
-  filename: string;
-  stdin: string;
-  createdAt: string;
-};
-
-export type JobState = {
-  status: SubmissionStatus;
-  claimedAt: string | null;
-};
-
 export type JobResult = {
   id: string;
   exitCode: number;
@@ -57,6 +44,7 @@ export type JobResult = {
 
 const LANGUAGE_SET: ReadonlySet<string> = new Set(LANGUAGES);
 
+/** Comprueba que el lenguaje sea python, java, c o cpp. */
 export function isLanguage(value: string): value is Language {
   return LANGUAGE_SET.has(value);
 }
@@ -64,6 +52,7 @@ export function isLanguage(value: string): value is Language {
 const ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** El id de un trabajo es un UUID. Sirve para no armar rutas raras en el FTP. */
 export function isJobId(value: string) {
   return ID_PATTERN.test(value);
 }

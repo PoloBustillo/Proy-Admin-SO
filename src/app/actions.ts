@@ -7,7 +7,7 @@ import { deleteOwned, getOwned, insertSubmission, listByUser } from "@/lib/db";
 import { filenameFor } from "@/lib/filenames";
 import { runQueue } from "@/lib/queue";
 import { getSession } from "@/lib/session";
-import { putPendingJob, removeJob } from "@/lib/storage";
+import { removeJob, saveSource } from "@/lib/storage";
 import { isJobId, isLanguage, type Submission } from "@/lib/types";
 
 export type ActionError = { error: string } | null;
@@ -16,6 +16,7 @@ const MAX_SOURCE = 200_000;
 const MAX_STDIN = 20_000;
 const MAX_PENDING = 30;
 
+/** Hora del formulario, en Ciudad de México (UTC−6), entre 1 minuto y 7 días. */
 function parseSchedule(value: string): { iso: string } | { error: string } {
   if (!value) return { error: "Elige la hora a la que debe correr." };
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
@@ -31,18 +32,21 @@ function parseSchedule(value: string): { iso: string } | { error: string } {
   return { iso: date.toISOString() };
 }
 
+/** Solo deja volver a una ruta de esta app, no a una dirección externa. */
 function safeReturn(value: FormDataEntryValue | null) {
   const text = String(value || "/dashboard").split("?")[0];
   if (!/^\/[A-Za-z0-9/_-]*$/.test(text)) return "/dashboard";
   return text;
 }
 
+/** Cierra la cookie y vuelve al inicio. */
 export async function logout() {
   const session = await getSession();
   session.destroy();
   redirect("/");
 }
 
+/** Guarda el programa y el archivo. «Ahora» lo corre aquí mismo; «Programar» espera al cron. */
 export async function submitCode(_prev: ActionError, formData: FormData): Promise<ActionError> {
   const user = await getCurrentUser();
   const languageValue = String(formData.get("language") || "");
@@ -88,16 +92,7 @@ export async function submitCode(_prev: ActionError, formData: FormData): Promis
   };
 
   try {
-    await putPendingJob(
-      {
-        id: submission.id,
-        language: submission.language,
-        filename: submission.filename,
-        stdin: submission.stdin,
-        createdAt: submission.createdAt,
-      },
-      submission.source,
-    );
+    await saveSource(submission.id, submission.source);
   } catch (error) {
     const message = error instanceof Error ? error.message : "No se pudo guardar el archivo.";
     return { error: message };
@@ -108,12 +103,13 @@ export async function submitCode(_prev: ActionError, formData: FormData): Promis
     try {
       await runQueue(5);
     } catch {
-      redirect(`/ejecuciones/${submission.id}`);
+      // La fila sigue en cola. La página de la ejecución muestra el play.
     }
   }
   redirect(`/ejecuciones/${submission.id}`);
 }
 
+/** Borra la fila del usuario y el archivo del FTP. */
 export async function deleteSubmission(formData: FormData) {
   const user = await getCurrentUser();
   const id = String(formData.get("id") || "");
@@ -129,6 +125,7 @@ export async function deleteSubmission(formData: FormData) {
   redirect("/historial");
 }
 
+/** Play: corre lo que ya está en hora. No adelanta un envío programado. */
 export async function processQueue(formData: FormData) {
   const user = await getCurrentUser();
   const returnTo = safeReturn(formData.get("returnTo"));

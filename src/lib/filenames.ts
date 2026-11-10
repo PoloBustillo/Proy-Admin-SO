@@ -15,6 +15,7 @@ const FALLBACK: Record<Language, string> = {
   cpp: "main.cpp",
 };
 
+/** Quita carpetas y caracteres raros, y pone la extensión del lenguaje. */
 export function safeFilename(name: string, language: Language) {
   const extension = EXTENSION[language];
   let base = path
@@ -29,6 +30,7 @@ export function safeFilename(name: string, language: Language) {
   return base;
 }
 
+/** Nombre automático al pegar código. Si cargaron un archivo, se usa el nombre de ese archivo. */
 export function filenameFor(language: Language, source: string, given: string) {
   const provided = given.trim();
   if (provided) return safeFilename(provided, language);
@@ -39,6 +41,7 @@ export function filenameFor(language: Language, source: string, given: string) {
   return FALLBACK[language];
 }
 
+/** Al cargar un archivo, elige el lenguaje por la extensión. */
 export function languageFromFilename(name: string): Language | null {
   const extension = name.split(".").pop()?.toLowerCase();
   if (extension === "py") return "python";

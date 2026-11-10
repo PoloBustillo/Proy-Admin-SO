@@ -12,6 +12,7 @@ function needsAuth(pathname: string) {
   );
 }
 
+/** Sin cookie de sesión, las páginas internas vuelven al login. */
 export function proxy(request: NextRequest) {
   const hasSession = Boolean(request.cookies.get(SESSION_COOKIE)?.value);
   if (needsAuth(request.nextUrl.pathname) && !hasSession) {

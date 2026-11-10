@@ -14,7 +14,7 @@ async function main() {
   process.env.RUN_TIMEOUT_SEC = "8";
 
   const { executeJob } = await import("../src/lib/runner");
-  const { putPendingJob } = await import("../src/lib/storage");
+  const { saveSource } = await import("../src/lib/storage");
   const { runQueue } = await import("../src/lib/queue");
   const { insertSubmission, getOwned, listByUser } = await import("../src/lib/db");
 
@@ -125,16 +125,7 @@ if (hasCommand("javac") && hasCommand("java")) {
 
 const queuedId = randomUUID();
 const createdAt = new Date().toISOString();
-await putPendingJob(
-  {
-    id: queuedId,
-    language: "python",
-    filename: "cola.py",
-    stdin: "",
-    createdAt,
-  },
-  'print("desde-cola")\n',
-);
+await saveSource(queuedId, 'print("desde-cola")\n');
 await insertSubmission({
   id: queuedId,
   userId: "dev:ana@escuela.test",

@@ -8,6 +8,8 @@ En la VPS todo es local. No hace falta un dominio: el dominio solo le pondría n
 - Un cron ejecuta ese archivo.
 - PostgreSQL, también en `127.0.0.1`, guarda cada ejecución y su resultado (estado, stdout, stderr, código de salida).
 
+El recorrido de un envío, los archivos `jobs/<id>/` y el `UPDATE` del cron están en [docs/flujo.md](docs/flujo.md).
+
 ## Arranque
 
 PostgreSQL tiene que estar instalado y escuchando solo en localhost.

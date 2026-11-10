@@ -1,22 +1,17 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Client, FTPError } from "basic-ftp";
 import { dataDir, localStorageRoot } from "@/lib/paths";
-import { isJobId, type JobFile, type JobState } from "@/lib/types";
+import { isJobId } from "@/lib/types";
 
-type Entry = { name: string; kind: "dir" | "file" };
-
-interface StorageIO {
+// El cron lee el programa desde aquí. En la VPS es FTP a 127.0.0.1.
+// En la laptop, el mismo código escribe en data/vps.
+type StorageIO = {
   write(rel: string, content: string): Promise<void>;
   read(rel: string): Promise<string | null>;
-  list(rel: string): Promise<Entry[]>;
   removeDir(rel: string): Promise<void>;
-}
-
-export function storageDriver() {
-  return process.env.STORAGE_DRIVER === "ftp" ? "ftp" : "local";
-}
+};
 
 function assertRel(rel: string) {
   if (!rel || rel.startsWith("/") || rel.includes("..") || rel.includes("\\")) {
@@ -38,27 +33,13 @@ const localIO: StorageIO = {
   async write(rel, content) {
     const full = localPath(rel);
     await mkdir(path.dirname(full), { recursive: true });
-    const tmp = `${full}.${randomUUID()}.tmp`;
-    await writeFile(tmp, content, "utf8");
-    await rename(tmp, full);
+    await writeFile(full, content, "utf8");
   },
   async read(rel) {
     try {
       return await readFile(localPath(rel), "utf8");
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
-      throw error;
-    }
-  },
-  async list(rel) {
-    try {
-      const names = await readdir(localPath(rel), { withFileTypes: true });
-      return names.map((entry) => ({
-        name: entry.name,
-        kind: entry.isDirectory() ? "dir" : "file",
-      }));
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
       throw error;
     }
   },
@@ -127,22 +108,6 @@ async function withFtp<T>(fn: (io: StorageIO) => Promise<T>): Promise<T> {
           await rm(tmp, { force: true });
         }
       },
-      async list(rel) {
-        assertRel(rel);
-        await client.cd(base);
-        try {
-          const entries = await client.list(rel);
-          return entries
-            .filter((entry) => entry.name !== "." && entry.name !== "..")
-            .map((entry) => ({
-              name: entry.name,
-              kind: entry.isDirectory ? "dir" : "file",
-            }));
-        } catch (error) {
-          if (isMissing(error)) return [];
-          throw error;
-        }
-      },
       async removeDir(rel) {
         assertRel(rel);
         await client.cd(base);
@@ -165,26 +130,24 @@ async function withFtp<T>(fn: (io: StorageIO) => Promise<T>): Promise<T> {
   }
 }
 
-export function withStorage<T>(fn: (io: StorageIO) => Promise<T>) {
-  if (storageDriver() === "ftp") return withFtp(fn);
+function withStorage<T>(fn: (io: StorageIO) => Promise<T>) {
+  if (process.env.STORAGE_DRIVER === "ftp") return withFtp(fn);
   return fn(localIO);
 }
 
-export async function putPendingJob(job: JobFile, source: string) {
-  if (!isJobId(job.id)) throw new Error("Identificador inválido.");
-  const state: JobState = { status: "queued", claimedAt: null };
-  await withStorage(async (io) => {
-    await io.write(`jobs/${job.id}/job.json`, JSON.stringify(job));
-    await io.write(`jobs/${job.id}/source`, source);
-    await io.write(`jobs/${job.id}/state.json`, JSON.stringify(state));
-  });
+/** Guarda el texto del programa en jobs/<id>/source. El cron lee ese archivo. */
+export async function saveSource(id: string, source: string) {
+  if (!isJobId(id)) throw new Error("Identificador inválido.");
+  await withStorage((io) => io.write(`jobs/${id}/source`, source));
 }
 
+/** Borra la carpeta del trabajo en el FTP o en data/vps. */
 export async function removeJob(id: string) {
   if (!isJobId(id)) return;
   await withStorage((io) => io.removeDir(`jobs/${id}`));
 }
 
+/** Lee el texto que se guardó al enviar. Null si el archivo ya no está. */
 export async function readSource(id: string) {
   if (!isJobId(id)) return null;
   return withStorage((io) => io.read(`jobs/${id}/source`));

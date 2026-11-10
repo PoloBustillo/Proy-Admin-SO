@@ -21,6 +21,7 @@ function loadFile(name: string) {
   }
 }
 
+/** Carga .env y después .env.local. No pisa variables que ya existan. */
 export function loadEnvFiles() {
   loadFile(".env");
   loadFile(".env.local");

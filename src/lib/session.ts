@@ -30,6 +30,7 @@ function sessionOptions(): SessionOptions {
   };
 }
 
+/** Lee la cookie firmada. io() evita que Next prerenderice el reloj de la sesión. */
 export async function getSession(): Promise<IronSession<SessionData>> {
   await io();
   return getIronSession<SessionData>(await cookies(), sessionOptions());
