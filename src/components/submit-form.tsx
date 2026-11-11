@@ -2,7 +2,6 @@
 
 import { useActionState, useRef, useState } from "react";
 import { submitCode, type ActionError } from "@/app/actions";
-import { PlayButton } from "@/components/play-button";
 import { languageFromFilename } from "@/lib/filenames";
 import { LANGUAGES, type Language } from "@/lib/types";
 
@@ -19,7 +18,6 @@ export function SubmitForm() {
   const [filename, setFilename] = useState("");
   const [source, setSource] = useState("");
   const [fromFile, setFromFile] = useState(false);
-  const [when, setWhen] = useState<"now" | "later">("now");
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function loadFile(file: File) {
@@ -108,49 +106,11 @@ export function SubmitForm() {
         )}
       </div>
 
-      <fieldset className="flex flex-col gap-2">
-        <legend className="field-label">Cuándo</legend>
-        <div className="langs">
-          <label className={when === "now" ? "lang lang-on" : "lang"}>
-            <input
-              className="sr-only"
-              type="radio"
-              name="when"
-              value="now"
-              checked={when === "now"}
-              onChange={() => setWhen("now")}
-            />
-            Ahora
-          </label>
-          <label className={when === "later" ? "lang lang-on" : "lang"}>
-            <input
-              className="sr-only"
-              type="radio"
-              name="when"
-              value="later"
-              checked={when === "later"}
-              onChange={() => setWhen("later")}
-            />
-            Programar
-          </label>
-        </div>
-      </fieldset>
-
-      {when === "later" ? (
-        <>
-          <label className="field">
-            <span>Hora</span>
-            <input name="runAt" type="datetime-local" required />
-          </label>
-          <div>
-            <button type="submit" className="btn btn-primary" disabled={pending}>
-              {pending ? "Guardando…" : "Programar"}
-            </button>
-          </div>
-        </>
-      ) : (
-        <PlayButton label="Correr ahora" />
-      )}
+      <div>
+        <button type="submit" className="btn btn-primary" disabled={pending}>
+          {pending ? "Corriendo…" : "Correr"}
+        </button>
+      </div>
     </form>
   );
 }

@@ -1,5 +1,5 @@
 import pg from "pg";
-import { isLanguage, type JobResult, type Submission, type SubmissionStatus } from "@/lib/types";
+import { isLanguage, type Submission, type SubmissionStatus } from "@/lib/types";
 
 let pool: pg.Pool | null = null;
 
@@ -28,8 +28,6 @@ type SubmissionRow = {
   stderr: string;
   command: string;
   created_at: Date;
-  run_at: Date | null;
-  scheduled: boolean;
   started_at: Date | null;
   finished_at: Date | null;
 };
@@ -60,8 +58,6 @@ function mapRow(row: SubmissionRow): Submission {
     stderr: row.stderr,
     command: row.command,
     createdAt: row.created_at.toISOString(),
-    runAt: toIso(row.run_at) || row.created_at.toISOString(),
-    scheduled: row.scheduled,
     startedAt: toIso(row.started_at),
     finishedAt: toIso(row.finished_at),
   };
@@ -70,7 +66,7 @@ function mapRow(row: SubmissionRow): Submission {
 const SELECT_SUBMISSION = `
   SELECT s.id, s.user_id, u.email, u.name, s.language, s.filename, s.source, s.stdin,
          s.status, s.exit_code, s.stdout, s.stderr, s.command,
-         s.created_at, s.run_at, s.scheduled, s.started_at, s.finished_at
+         s.created_at, s.started_at, s.finished_at
   FROM submissions s
   JOIN users u ON u.id = s.user_id
 `;
@@ -85,16 +81,16 @@ export async function upsertUser(id: string, email: string, name: string) {
   );
 }
 
-/** Inserta el programa en cola. El cron no crea filas: solo actualiza esta. */
+/** Guarda el programa y el resultado de haberlo corrido en este servidor. */
 export async function insertSubmission(submission: Submission) {
   await upsertUser(submission.userId, submission.userEmail, submission.userName);
   await getPool().query(
     `INSERT INTO submissions (
        id, user_id, language, filename, source, stdin, status,
-       exit_code, stdout, stderr, command, created_at, run_at, scheduled, started_at, finished_at
+       exit_code, stdout, stderr, command, created_at, started_at, finished_at
      ) VALUES (
        $1, $2, $3, $4, $5, $6, $7,
-       $8, $9, $10, $11, $12, $13, $14, $15, $16
+       $8, $9, $10, $11, $12, $13, $14
      )`,
     [
       submission.id,
@@ -109,8 +105,6 @@ export async function insertSubmission(submission: Submission) {
       submission.stderr,
       submission.command,
       submission.createdAt,
-      submission.runAt,
-      submission.scheduled,
       submission.startedAt,
       submission.finishedAt,
     ],
@@ -139,47 +133,4 @@ export async function getOwned(id: string, userId: string) {
     [id, userId],
   );
   return result.rows[0] ? mapRow(result.rows[0]) : null;
-}
-
-/** Trabajos en cola cuya hora ya llegó. Uno programado a futuro no sale. */
-export async function listRunnable(limit: number) {
-  const result = await getPool().query<SubmissionRow>(
-    `${SELECT_SUBMISSION}
-     WHERE s.status = 'queued'
-       AND (s.run_at IS NULL OR s.run_at <= now())
-     ORDER BY s.created_at ASC
-     LIMIT $1`,
-    [limit],
-  );
-  return result.rows.map(mapRow);
-}
-
-/** Pasa la fila a running. Devuelve false si otro proceso ya la tomó. */
-export async function claimSubmission(id: string) {
-  const result = await getPool().query(
-    `UPDATE submissions
-     SET status = 'running',
-         started_at = now()
-     WHERE id = $1
-       AND status = 'queued'
-       AND (run_at IS NULL OR run_at <= now())`,
-    [id],
-  );
-  return (result.rowCount ?? 0) > 0;
-}
-
-/** Guarda la salida del compilador o del programa y cierra la fila. */
-export async function completeSubmission(id: string, result: JobResult) {
-  await getPool().query(
-    `UPDATE submissions
-     SET status = 'finished',
-         exit_code = $2,
-         stdout = $3,
-         stderr = $4,
-         command = $5,
-         started_at = COALESCE(started_at, $6),
-         finished_at = $7
-     WHERE id = $1`,
-    [id, result.exitCode, result.stdout, result.stderr, result.command, result.startedAt, result.finishedAt],
-  );
 }

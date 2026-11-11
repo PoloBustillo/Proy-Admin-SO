@@ -26,8 +26,6 @@ export type Submission = {
   stderr: string;
   command: string;
   createdAt: string;
-  runAt: string;
-  scheduled: boolean;
   startedAt: string | null;
   finishedAt: string | null;
 };
@@ -52,7 +50,7 @@ export function isLanguage(value: string): value is Language {
 const ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** El id de un trabajo es un UUID. Sirve para no armar rutas raras en el FTP. */
+/** El id de un trabajo es un UUID. */
 export function isJobId(value: string) {
   return ID_PATTERN.test(value);
 }

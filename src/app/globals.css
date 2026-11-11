@@ -81,18 +81,6 @@ a {
   background: #333;
 }
 
-.btn-play {
-  width: 2.5rem;
-  height: 2.5rem;
-  padding: 0;
-}
-
-.btn-play-mark {
-  width: 0.55rem;
-  height: 0.55rem;
-  background: currentColor;
-}
-
 .btn-line:hover:not(:disabled) {
   background: #f3f3f3;
 }

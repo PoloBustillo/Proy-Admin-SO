@@ -23,7 +23,7 @@ export function JobTable({ jobs }: { jobs: Submission[] }) {
               <span className="min-w-0">
                 <span className="block truncate font-mono text-sm text-ink">{job.filename}</span>
                 <span className="text-sm text-ink-soft">
-                  {languageLabel(job.language)} · {job.scheduled ? `programado ${formatWhen(job.runAt)}` : "ahora"}
+                  {languageLabel(job.language)} · {formatWhen(job.createdAt)}
                 </span>
               </span>
               <StatusPill kind={kind} code={job.exitCode} />

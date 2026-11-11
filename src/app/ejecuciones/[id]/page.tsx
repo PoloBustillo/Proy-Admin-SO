@@ -2,8 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { DeleteJobForm } from "@/components/delete-job";
-import { LiveRefresh } from "@/components/live-refresh";
-import { ProcessForm } from "@/components/process-form";
 import { Shell, ShellFallback } from "@/components/shell";
 import { StatusPill } from "@/components/status-pill";
 import { getCurrentUser } from "@/lib/auth";
@@ -27,7 +25,6 @@ async function Run({ params }: { params: Promise<{ id: string }> }) {
   if (!job) notFound();
 
   const kind = outcome(job);
-  const waiting = job.status !== "finished";
 
   return (
     <Shell user={user} current="run">
@@ -42,27 +39,12 @@ async function Run({ params }: { params: Promise<{ id: string }> }) {
           </div>
         </div>
         <DeleteJobForm id={job.id} />
-        {waiting && !job.scheduled ? (
-          <ProcessForm
-            returnTo={`/ejecuciones/${job.id}`}
-            submissionId={job.id}
-            label="Correr este programa ahora"
-          />
-        ) : null}
       </div>
 
-      <LiveRefresh active={waiting} />
-
-      <dl className="card grid gap-4 p-4 sm:grid-cols-3">
+      <dl className="card grid gap-4 p-4 sm:grid-cols-2">
         <div>
           <dt className="text-xs font-semibold tracking-[0.14em] text-ink-soft uppercase">Lenguaje</dt>
           <dd className="mt-1">{languageLabel(job.language)}</dd>
-        </div>
-        <div>
-          <dt className="text-xs font-semibold tracking-[0.14em] text-ink-soft uppercase">
-            {job.scheduled ? "Programado" : "Corre"}
-          </dt>
-          <dd className="mt-1">{job.scheduled ? formatWhen(job.runAt) : "Ahora"}</dd>
         </div>
         <div>
           <dt className="text-xs font-semibold tracking-[0.14em] text-ink-soft uppercase">Terminó</dt>
@@ -73,14 +55,6 @@ async function Run({ params }: { params: Promise<{ id: string }> }) {
       {job.command ? (
         <p className="text-sm text-ink-soft">
           Comando: <span className="font-mono text-ink">{job.command}</span>
-        </p>
-      ) : null}
-
-      {waiting ? (
-        <p className="card p-4 text-ink-soft">
-          {job.scheduled
-            ? `Programado para ${formatWhen(job.runAt)}. El cron lo corre a esa hora.`
-            : "Sigue en cola para correr ahora."}
         </p>
       ) : null}
 
@@ -100,13 +74,13 @@ async function Run({ params }: { params: Promise<{ id: string }> }) {
         <div>
           <h2 className="mb-2 text-lg font-semibold">stdout</h2>
           <pre className="pane border border-line bg-panel">
-            {job.stdout || (waiting ? "Todavía no hay salida." : "Sin salida estándar.")}
+            {job.stdout || "Sin salida estándar."}
           </pre>
         </div>
         <div>
           <h2 className="mb-2 text-lg font-semibold">stderr</h2>
           <pre className="pane">
-            {job.stderr || (waiting ? "Todavía no hay salida." : "Sin errores.")}
+            {job.stderr || "Sin errores."}
           </pre>
         </div>
       </section>
