@@ -2,31 +2,23 @@ export const LANGUAGES = ["python", "java", "c", "cpp"] as const;
 
 export type Language = (typeof LANGUAGES)[number];
 
-export type SubmissionStatus = "queued" | "running" | "finished";
-
 export type CurrentUser = {
   id: string;
   email: string;
   name: string;
-  image?: string;
 };
 
 export type Submission = {
   id: string;
   userId: string;
-  userEmail: string;
-  userName: string;
   language: Language;
   filename: string;
   source: string;
-  stdin: string;
-  status: SubmissionStatus;
   exitCode: number | null;
   stdout: string;
   stderr: string;
   command: string;
   createdAt: string;
-  startedAt: string | null;
   finishedAt: string | null;
 };
 

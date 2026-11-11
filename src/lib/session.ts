@@ -6,7 +6,6 @@ export type SessionData = {
   userId: string;
   email: string;
   name: string;
-  image?: string;
 };
 
 export const SESSION_COOKIE = "nucleo_session";

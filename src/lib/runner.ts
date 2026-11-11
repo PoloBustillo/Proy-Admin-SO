@@ -40,7 +40,7 @@ function killTree(child: ChildProcess) {
 }
 
 /** Lanza un comando, guarda stdout y stderr, y lo corta si se pasa del tiempo. */
-function run(cmd: string, args: string[], cwd: string, input: string, limitMs: number) {
+function run(cmd: string, args: string[], cwd: string, limitMs: number) {
   return new Promise<RunOutput>((resolve) => {
     let stdout = "";
     let stderr = "";
@@ -100,7 +100,7 @@ function run(cmd: string, args: string[], cwd: string, input: string, limitMs: n
       }
       finish(code ?? 1);
     });
-    child.stdin?.end(input);
+    child.stdin?.end();
   });
 }
 
@@ -111,13 +111,12 @@ async function compileAndRun(
   runArgs: string[],
   displayRun: string,
   cwd: string,
-  stdin: string,
   limitMs: number,
 ) {
-  const compiled = await run(compile[0], compile.slice(1), cwd, "", limitMs);
+  const compiled = await run(compile[0], compile.slice(1), cwd, limitMs);
   const compileCommand = compile.join(" ");
   if (compiled.code !== 0) return { ...compiled, command: compileCommand };
-  const executed = await run(runCmd, runArgs, cwd, stdin, limitMs);
+  const executed = await run(runCmd, runArgs, cwd, limitMs);
   return { ...executed, command: `${compileCommand} && ${displayRun}` };
 }
 
@@ -127,7 +126,6 @@ export async function executeJob(input: {
   language: Language;
   filename: string;
   source: string;
-  stdin: string;
 }): Promise<JobResult> {
   const filename = safeFilename(input.filename, input.language);
   const startedAt = new Date().toISOString();
@@ -139,7 +137,7 @@ export async function executeJob(input: {
     let output: RunOutput & { command: string };
 
     if (input.language === "python") {
-      const result = await run("python3", [filename], dir, input.stdin, limitMs);
+      const result = await run("python3", [filename], dir, limitMs);
       output = { ...result, command: `python3 ${filename}` };
     } else if (input.language === "c") {
       output = await compileAndRun(
@@ -148,7 +146,6 @@ export async function executeJob(input: {
         [],
         "./program",
         dir,
-        input.stdin,
         limitMs,
       );
     } else if (input.language === "cpp") {
@@ -158,7 +155,6 @@ export async function executeJob(input: {
         [],
         "./program",
         dir,
-        input.stdin,
         limitMs,
       );
     } else {
@@ -169,7 +165,6 @@ export async function executeJob(input: {
         ["-cp", dir, className],
         `java ${className}`,
         dir,
-        input.stdin,
         limitMs,
       );
     }

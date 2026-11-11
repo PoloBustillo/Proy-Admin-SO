@@ -1,18 +1,13 @@
 import type { Language, Submission } from "@/lib/types";
 
-export type Outcome = "queued" | "running" | "ok" | "error";
+export type Outcome = "ok" | "error";
 
 export function outcome(job: Submission): Outcome {
-  if (job.status === "queued") return "queued";
-  if (job.status === "running") return "running";
   return job.exitCode === 0 ? "ok" : "error";
 }
 
 export function outcomeLabel(kind: Outcome) {
-  if (kind === "queued") return "En cola";
-  if (kind === "running") return "Ejecutando";
-  if (kind === "ok") return "Listo";
-  return "Error";
+  return kind === "ok" ? "Listo" : "Error";
 }
 
 export function languageLabel(language: Language) {

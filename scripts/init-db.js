@@ -41,14 +41,12 @@ CREATE TABLE IF NOT EXISTS submissions (
   language text NOT NULL,
   filename text NOT NULL,
   source text NOT NULL,
-  stdin text NOT NULL DEFAULT '',
   status text NOT NULL,
   exit_code integer,
   stdout text NOT NULL DEFAULT '',
   stderr text NOT NULL DEFAULT '',
   command text NOT NULL DEFAULT '',
   created_at timestamptz NOT NULL,
-  started_at timestamptz,
   finished_at timestamptz
 );
 
@@ -112,9 +110,7 @@ main().catch((error) => {
     } catch {
       /* The URL is already invalid; the message below is enough. */
     }
-    console.error(`La clave no coincide para el usuario "${user}" en ${host}.`);
-    console.error("Prueba la misma URL con: psql \"$DATABASE_URL\" -c 'SELECT current_user;'");
-    console.error("Si falla, pon la clave de nuevo: sudo -u postgres psql -c \"ALTER USER postgres PASSWORD 'una_clave';\"");
+  
     process.exit(1);
   }
   console.error(message);

@@ -10,6 +10,5 @@ export async function getCurrentUser(): Promise<CurrentUser> {
     id: session.userId,
     email: session.email,
     name: session.name || session.email,
-    image: session.image,
   };
 }

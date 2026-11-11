@@ -36,7 +36,7 @@ export async function submitCode(_prev: ActionError, formData: FormData): Promis
   const id = randomUUID();
   let result;
   try {
-    result = await executeJob({ id, language: languageValue, filename, source, stdin: "" });
+    result = await executeJob({ id, language: languageValue, filename, source });
   } catch (error) {
     const message = error instanceof Error ? error.message : "No se pudo correr el programa.";
     return { error: message };
@@ -45,19 +45,14 @@ export async function submitCode(_prev: ActionError, formData: FormData): Promis
   const submission: Submission = {
     id,
     userId: user.id,
-    userEmail: user.email,
-    userName: user.name,
     language: languageValue,
     filename,
     source,
-    stdin: "",
-    status: "finished",
     exitCode: result.exitCode,
     stdout: result.stdout,
     stderr: result.stderr,
     command: result.command,
     createdAt: result.startedAt,
-    startedAt: result.startedAt,
     finishedAt: result.finishedAt,
   };
 

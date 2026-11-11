@@ -8,7 +8,6 @@ type GoogleUser = {
   sub?: string;
   email?: string;
   name?: string;
-  picture?: string;
 };
 
 export async function GET(request: Request) {
@@ -56,7 +55,6 @@ export async function GET(request: Request) {
   session.userId = `google:${profile.sub}`;
   session.email = profile.email;
   session.name = profile.name || profile.email;
-  if (profile.picture) session.image = profile.picture;
   await session.save();
   await upsertUser(session.userId, session.email, session.name);
   jar.delete("nucleo_oauth_state");

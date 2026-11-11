@@ -63,13 +63,6 @@ async function Run({ params }: { params: Promise<{ id: string }> }) {
         <pre className="pane">{job.source}</pre>
       </section>
 
-      {job.stdin ? (
-        <section className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold">Entrada estándar</h2>
-          <pre className="pane border border-line bg-panel">{job.stdin}</pre>
-        </section>
-      ) : null}
-
       <section className="flex flex-col gap-4">
         <div>
           <h2 className="mb-2 text-lg font-semibold">stdout</h2>
