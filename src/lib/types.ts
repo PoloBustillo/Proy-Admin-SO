@@ -32,11 +32,9 @@ export type JobResult = {
   finishedAt: string;
 };
 
-const LANGUAGE_SET: ReadonlySet<string> = new Set(LANGUAGES);
-
 /** Comprueba que el lenguaje sea python, java, c o cpp. */
 export function isLanguage(value: string): value is Language {
-  return LANGUAGE_SET.has(value);
+  return (LANGUAGES as readonly string[]).includes(value);
 }
 
 const ID_PATTERN =

@@ -12,9 +12,9 @@ Núcleo no revisa el código. Al pulsar **Correr**, el servidor donde está la p
 | Lenguaje | Comando |
 | --- | --- |
 | Python | `python3 archivo.py` |
-| C | `cc -std=c11 -o program archivo.c -lm` y luego `./program` |
-| C++ | `c++ -std=c++17 -o program archivo.cpp` y luego `./program` |
-| Java | `javac -encoding UTF-8 Archivo.java` y luego `java Archivo` |
+| C | `cc -o program archivo.c` y luego `./program` |
+| C++ | `c++ -o program archivo.cpp` y luego `./program` |
+| Java | `javac Archivo.java` y luego `java Archivo` |
 
 En la VPS esos comandos tienen que estar instalados para el usuario del servicio `nucleo`:
 
@@ -22,7 +22,7 @@ En la VPS esos comandos tienen que estar instalados para el usuario del servicio
 sudo apt install -y python3 build-essential g++ default-jdk-headless
 ```
 
-El tiempo máximo es `RUN_TIMEOUT_SEC` (8 segundos si no se define, tope 120). Si se pasa, el código de salida es 124. La salida se corta alrededor de 64 KB.
+El tiempo máximo es `RUN_TIMEOUT_SEC` (8 segundos si no se define, tope 120). Si se pasa, el código de salida es 124.
 
 ## Tablas
 

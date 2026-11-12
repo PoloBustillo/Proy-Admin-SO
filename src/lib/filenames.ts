@@ -35,7 +35,7 @@ export function filenameFor(language: Language, source: string, given: string) {
   const provided = given.trim();
   if (provided) return safeFilename(provided, language);
   if (language === "java") {
-    const match = source.match(/\bpublic\s+(?:(?:abstract|final|strictfp)\s+)*class\s+([A-Za-z_][A-Za-z0-9_]*)/);
+    const match = source.match(/public\s+class\s+([A-Za-z_][A-Za-z0-9_]*)/);
     if (match) return safeFilename(`${match[1]}.java`, language);
   }
   return FALLBACK[language];

@@ -6,118 +6,111 @@ import path from "node:path";
 import { safeFilename } from "@/lib/filenames";
 import type { JobResult, Language } from "@/lib/types";
 
-const OUTPUT_CAP = 64 * 1024;
+type CommandResult = {
+  code: number;
+  stdout: string;
+  stderr: string;
+  command: string;
+};
 
-type RunOutput = { code: number; stdout: string; stderr: string };
-
-/** Corta la salida para no guardar textos enormes en la base. */
-function appendCap(current: string, chunk: string) {
-  if (current.includes("[salida truncada]")) return current;
-  const next = current + chunk;
-  if (next.length <= OUTPUT_CAP) return next;
-  return `${next.slice(0, OUTPUT_CAP)}\n[salida truncada]\n`;
+function commandText(program: string, args: string[]) {
+  return [program, ...args].join(" ");
 }
 
-/** Segundos de RUN_TIMEOUT_SEC. Por defecto 8, máximo 120. */
-function timeoutMs() {
-  const seconds = Number(process.env.RUN_TIMEOUT_SEC || 8);
-  if (!Number.isFinite(seconds) || seconds <= 0) return 8_000;
-  return Math.min(seconds, 120) * 1000;
-}
+// 8 segundos por defecto. RUN_TIMEOUT_SEC puede subirlo, con tope de 120.
+const seconds = Number(process.env.RUN_TIMEOUT_SEC || 8);
+const timeLimitMs = !Number.isFinite(seconds) || seconds <= 0 ? 8_000 : Math.min(seconds, 120) * 1000;
 
-/** Mata el proceso y los que haya abierto, por ejemplo el compilador. */
-function killTree(child: ChildProcess) {
-  if (child.pid == null) return;
-  try {
-    process.kill(-child.pid, "SIGKILL");
-  } catch {
-    try {
-      child.kill("SIGKILL");
-    } catch {
-        /* El proceso ya había terminado. */
-    }
-  }
-}
+/**
+ * Equivale a escribir el comando en la terminal y esperar a que acabe.
+ * Devuelve lo que imprimió y el código de salida.
+ * 0 significa que salió bien. 127: no existe el comando. 124: se pasó del tiempo.
+ */
+function runCommand(program: string, args: string[], folder: string) {
+  const command = commandText(program, args);
 
-/** Lanza un comando, guarda stdout y stderr, y lo corta si se pasa del tiempo. */
-function run(cmd: string, args: string[], cwd: string, limitMs: number) {
-  return new Promise<RunOutput>((resolve) => {
+  return new Promise<CommandResult>((resolve) => {
     let stdout = "";
     let stderr = "";
-    let settled = false;
-    let timedOut = false;
-
-    const finish = (code: number) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      resolve({ code, stdout, stderr });
-    };
+    let alreadyFinished = false;
+    let ranOutOfTime = false;
 
     let child: ChildProcess;
     try {
-      child = spawn(cmd, args, {
-        cwd,
-        detached: true,
+      child = spawn(program, args, {
+        cwd: folder,
         stdio: ["pipe", "pipe", "pipe"],
         env: {
           PATH: process.env.PATH || "/usr/bin:/bin:/usr/local/bin",
-          HOME: cwd,
-          TMPDIR: cwd,
-          LANG: "C.UTF-8",
-          LC_ALL: "C.UTF-8",
-        } as unknown as NodeJS.ProcessEnv,
+          HOME: folder,
+          TMPDIR: folder,
+          NODE_ENV: "production",
+        },
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "No se pudo iniciar el proceso.";
-      resolve({ code: 127, stdout: "", stderr: `No se encontró el comando "${cmd}".\n${message}\n` });
+      resolve({
+        code: 127,
+        stdout: "",
+        stderr: `No se encontró el comando "${program}".\n${message}\n`,
+        command,
+      });
       return;
     }
 
     const timer = setTimeout(() => {
-      timedOut = true;
-      killTree(child);
-    }, limitMs);
+      ranOutOfTime = true;
+      try {
+        child.kill("SIGKILL");
+      } catch {
+        /* Ya había terminado. */
+      }
+    }, timeLimitMs);
+
+    function finish(code: number) {
+      if (alreadyFinished) return;
+      alreadyFinished = true;
+      clearTimeout(timer);
+      resolve({ code, stdout, stderr, command });
+    }
 
     child.stdout?.on("data", (chunk: Buffer) => {
-      stdout = appendCap(stdout, chunk.toString("utf8"));
+      stdout += chunk.toString("utf8");
     });
     child.stderr?.on("data", (chunk: Buffer) => {
-      stderr = appendCap(stderr, chunk.toString("utf8"));
+      stderr += chunk.toString("utf8");
     });
     child.stdin?.on("error", () => {
-      /* El programa cerró la entrada antes de leerla toda. */
+      /* El programa cerró su entrada. No es un fallo nuestro. */
     });
     child.on("error", (error) => {
-      stderr = appendCap(stderr, `No se encontró el comando "${cmd}".\n${error.message}\n`);
+      stderr += `No se encontró el comando "${program}".\n${error.message}\n`;
       finish(127);
     });
     child.on("close", (code) => {
-      if (timedOut) {
-        stderr = appendCap(stderr, "\nTiempo de ejecución agotado.\n");
+      if (ranOutOfTime) {
+        stderr += "\nTiempo de ejecución agotado.\n";
         finish(124);
         return;
       }
       finish(code ?? 1);
     });
+
+    // Sin esto, un input() se queda esperando teclado para siempre.
     child.stdin?.end();
   });
 }
 
-/** Compila y, si compiló, corre el programa. Si no, devuelve el error del compilador tal cual. */
-async function compileAndRun(
-  compile: string[],
-  runCmd: string,
-  runArgs: string[],
-  displayRun: string,
-  cwd: string,
-  limitMs: number,
-) {
-  const compiled = await run(compile[0], compile.slice(1), cwd, limitMs);
-  const compileCommand = compile.join(" ");
-  if (compiled.code !== 0) return { ...compiled, command: compileCommand };
-  const executed = await run(runCmd, runArgs, cwd, limitMs);
-  return { ...executed, command: `${compileCommand} && ${displayRun}` };
+/**
+ * Primero el compilador. Si falla, devolvemos su error y no corremos nada.
+ * Si compiló, corremos el programa y devolvemos lo que ese imprimió.
+ */
+async function compileThenRun(compiler: string[], program: string[], folder: string) {
+  const compiled = await runCommand(compiler[0], compiler.slice(1), folder);
+  if (compiled.code !== 0) return compiled;
+
+  const executed = await runCommand(program[0], program.slice(1), folder);
+  return { ...executed, command: `${compiled.command} && ${executed.command}` };
 }
 
 /** Escribe el código en una carpeta temporal, lo corre y borra esa carpeta. */
@@ -129,56 +122,33 @@ export async function executeJob(input: {
 }): Promise<JobResult> {
   const filename = safeFilename(input.filename, input.language);
   const startedAt = new Date().toISOString();
-  const dir = await mkdtemp(path.join(os.tmpdir(), "nucleo-"));
-  const limitMs = timeoutMs();
+  const folder = await mkdtemp(path.join(os.tmpdir(), "nucleo-"));
 
   try {
-    await writeFile(path.join(dir, filename), input.source, "utf8");
-    let output: RunOutput & { command: string };
+    await writeFile(path.join(folder, filename), input.source, "utf8");
 
+    let result: CommandResult;
     if (input.language === "python") {
-      const result = await run("python3", [filename], dir, limitMs);
-      output = { ...result, command: `python3 ${filename}` };
+      result = await runCommand("python3", [filename], folder);
     } else if (input.language === "c") {
-      output = await compileAndRun(
-        ["cc", "-std=c11", "-o", "program", filename, "-lm"],
-        path.join(dir, "program"),
-        [],
-        "./program",
-        dir,
-        limitMs,
-      );
+      result = await compileThenRun(["cc", "-o", "program", filename], ["./program"], folder);
     } else if (input.language === "cpp") {
-      output = await compileAndRun(
-        ["c++", "-std=c++17", "-o", "program", filename],
-        path.join(dir, "program"),
-        [],
-        "./program",
-        dir,
-        limitMs,
-      );
+      result = await compileThenRun(["c++", "-o", "program", filename], ["./program"], folder);
     } else {
       const className = filename.replace(/\.java$/, "");
-      output = await compileAndRun(
-        ["javac", "-encoding", "UTF-8", filename],
-        "java",
-        ["-cp", dir, className],
-        `java ${className}`,
-        dir,
-        limitMs,
-      );
+      result = await compileThenRun(["javac", filename], ["java", className], folder);
     }
 
     return {
       id: input.id,
-      exitCode: output.code,
-      stdout: output.stdout,
-      stderr: output.stderr,
-      command: output.command,
+      exitCode: result.code,
+      stdout: result.stdout,
+      stderr: result.stderr,
+      command: result.command,
       startedAt,
       finishedAt: new Date().toISOString(),
     };
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(folder, { recursive: true, force: true });
   }
 }

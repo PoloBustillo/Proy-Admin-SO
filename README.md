@@ -50,4 +50,3 @@ sudo apt install -y python3 build-essential g++ default-jdk-headless
 
 - 200 KB de código.
 - 8 segundos por compilación o ejecución, salvo `RUN_TIMEOUT_SEC` (máximo 120).
-- La salida se corta alrededor de 64 KB.
