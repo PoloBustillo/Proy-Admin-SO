@@ -14,7 +14,7 @@ Núcleo no revisa el código. Al pulsar **Correr**, el servidor donde está la p
 | Python | `python3 archivo.py` |
 | C | `cc -o program archivo.c` y luego `./program` |
 | C++ | `c++ -o program archivo.cpp` y luego `./program` |
-| Java | `javac Archivo.java` y luego `java Archivo` |
+| Java | `javac -encoding UTF-8 Archivo.java` y luego `java Archivo` |
 
 En la VPS esos comandos tienen que estar instalados para el usuario del servicio `nucleo`:
 

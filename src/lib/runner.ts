@@ -136,7 +136,8 @@ export async function executeJob(input: {
       result = await compileThenRun(["c++", "-o", "program", filename], ["./program"], folder);
     } else {
       const className = filename.replace(/\.java$/, "");
-      result = await compileThenRun(["javac", filename], ["java", className], folder);
+      // Sin UTF-8, javac usa ASCII y falla con caracteres como ¡.
+      result = await compileThenRun(["javac", "-encoding", "UTF-8", filename], ["java", className], folder);
     }
 
     return {
