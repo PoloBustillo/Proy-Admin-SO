@@ -4,7 +4,7 @@ Núcleo no revisa el código. Al pulsar **Correr**, el servidor donde está la p
 
 1. La persona entra con Google. La cookie `nucleo_session` identifica la sesión.
 2. En **Enviar** elige Python, Java, C o C++ y pega el código o carga un archivo.
-3. El nombre no se escribe. Si carga un archivo, se usa ese nombre. Si pega código, queda `main.py`, `main.c`, `main.cpp` o, en Java, el de la `public class`.
+3. El nombre no se escribe. Si carga un archivo, se usa ese nombre. Si pega código, queda `main-20261111-194032.py` (o `.c`, `.cpp`), con la fecha y hora de la Ciudad de México. En Java, si hay `public class Hola`, el archivo es `Hola.java`.
 4. `submitCode` llama a `executeJob` en el mismo proceso de la web. El texto se escribe en una carpeta temporal, se lanza el comando y esa carpeta se borra.
 5. La salida, el error y el código de salida se insertan en `submissions`.
 6. La página de la ejecución lee esa fila. El historial lista las filas de esa cuenta.

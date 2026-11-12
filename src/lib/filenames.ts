@@ -30,6 +30,22 @@ export function safeFilename(name: string, language: Language) {
   return base;
 }
 
+/** Fecha y hora de la Ciudad de México, para que el nombre no sea siempre main. */
+function dateStamp(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const value = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+  return `${value("year")}${value("month")}${value("day")}-${value("hour")}${value("minute")}${value("second")}`;
+}
+
 /** Nombre automático al pegar código. Si cargaron un archivo, se usa el nombre de ese archivo. */
 export function filenameFor(language: Language, source: string, given: string) {
   const provided = given.trim();
@@ -38,7 +54,8 @@ export function filenameFor(language: Language, source: string, given: string) {
     const match = source.match(/public\s+class\s+([A-Za-z_][A-Za-z0-9_]*)/);
     if (match) return safeFilename(`${match[1]}.java`, language);
   }
-  return FALLBACK[language];
+  const base = language === "java" ? "Main" : "main";
+  return safeFilename(`${base}-${dateStamp(new Date())}`, language);
 }
 
 /** Al cargar un archivo, elige el lenguaje por la extensión. */

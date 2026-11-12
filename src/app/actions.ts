@@ -27,13 +27,12 @@ export async function submitCode(_prev: ActionError, formData: FormData): Promis
   if (!isLanguage(languageValue)) return { error: "Elige Python, Java, C o C++." };
 
   const source = String(formData.get("source") || "");
+  const id = randomUUID();
   const filename = filenameFor(languageValue, source, String(formData.get("filename") || ""));
 
   if (!source) return { error: "Escribe o carga un programa." };
   if (source.includes("\0")) return { error: "El archivo no es texto." };
   if (source.length > MAX_SOURCE) return { error: "El programa supera 200 KB." };
-
-  const id = randomUUID();
   let result;
   try {
     result = await executeJob({ id, language: languageValue, filename, source });
